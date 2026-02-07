@@ -16,3 +16,4 @@ frontend/.vscode
 WareHouse/
 data/
 temp/
+.env
