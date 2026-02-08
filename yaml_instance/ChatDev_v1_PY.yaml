@@ -35,105 +35,6 @@ graph:
       config: {}
       description: ''
       context_window: 0
-    - id: Programmer Code Review
-      type: agent
-      config:
-        name: gpt-4o
-        role: |-
-          ${COMMON_PROMPT}
-          You are Programmer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
-          You can write/create computer software or applications by providing a specific programming language to the computer. You have extensive computing and coding experience in many varieties of programming languages and platforms, such as Python, Java, C, C++, HTML, CSS, JavaScript, XML, SQL, PHP, etc,.
-          You will receive the task from user.
-          To complete the task, you must call the functions to save or edit the codes that appropriately solves the requested instruction based on your expertise and customer's needs.
-        provider: openai
-        base_url: ${BASE_URL}
-        api_key: ${API_KEY}
-        params: {}
-        tooling:
-          - type: function
-            config:
-              tools:
-                - name: uv_related:All
-                - name: apply_text_edits
-                - name: create_folder
-                - name: describe_available_files
-                - name: delete_path
-                - name: read_file_segment
-                - name: search_in_files
-                - name: save_file
-                - name: list_directory
-              timeout: null
-        thinking: null
-        memories: []
-        retry: null
-      description: ''
-      context_window: -1
-    - id: Programmer Test Modification
-      type: agent
-      config:
-        name: gpt-4o
-        role: |-
-          ${COMMON_PROMPT}
-          You are Programmer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
-          You can write/create computer software or applications by providing a specific programming language to the computer. You have extensive computing and coding experience in many varieties of programming languages and platforms, such as Python, Java, C, C++, HTML, CSS, JavaScript, XML, SQL, PHP, etc,.
-          You will receive the task from user.
-          To complete the task, you must call the functions to save or edit the codes that appropriately solves the requested instruction based on your expertise and customer's needs.
-        provider: openai
-        base_url: ${BASE_URL}
-        api_key: ${API_KEY}
-        params: {}
-        tooling:
-          - type: function
-            config:
-              tools:
-                - name: uv_related:All
-                - name: apply_text_edits
-                - name: create_folder
-                - name: describe_available_files
-                - name: delete_path
-                - name: read_file_segment
-                - name: search_in_files
-                - name: save_file
-                - name: list_directory
-              timeout: null
-        thinking: null
-        memories: []
-        retry: null
-      description: ''
-      context_window: -1
-    - id: Chief Executive Officer
-      type: agent
-      config:
-        name: gpt-4o
-        provider: openai
-        role: |-
-          ${COMMON_PROMPT}
-          You are Chief Executive Officer. Now, we are both working at ChatDev and we share a common interest in collaborating to successfully complete a task assigned by a new customer.
-          Your main responsibilities include being an active decision-maker on users' demands and other key policy issues, leader, manager, and executor. Your decision-making role involves high-level decisions about policy and strategy; and your communicator role can involve speaking to the organization's management and employees.
-          You will receive the task from user.
-          To complete the task, I will give you one or more instructions, and you must help me to write a specific solution that appropriately solves the requested instruction based on your expertise and my needs.
-        base_url: ${BASE_URL}
-        api_key: ${API_KEY}
-        params: {}
-        tooling:
-          - type: function
-            config:
-              tools:
-                - name: uv_related:All
-                - name: apply_text_edits
-                - name: create_folder
-                - name: describe_available_files
-                - name: delete_path
-                - name: read_file_segment
-                - name: search_in_files
-                - name: save_file
-                - name: list_directory
-              timeout: null
-        thinking: null
-        memories: []
-        retry: null
-      description: ''
-      context_window: 0
     - id: Code Review Comment Phase Prompt for Assistant
       type: literal
       config:
@@ -196,38 +97,6 @@ graph:
         role: user
       description: ''
       context_window: 0
-    - id: Chief Product Officer
-      type: agent
-      config:
-        name: gpt-4o
-        provider: openai
-        role: |-
-          ${COMMON_PROMPT}
-          You are Chief Product Officer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
-          You are responsible for all product-related matters in ChatDev. Usually includes product design, product strategy, product vision, product innovation, project management and product marketing.
-          You will receive the task from user.
-        base_url: ${BASE_URL}
-        api_key: ${API_KEY}
-        params: {}
-        tooling:
-          - type: function
-            config:
-              tools:
-                - name: uv_related:All
-                - name: apply_text_edits
-                - name: create_folder
-                - name: describe_available_files
-                - name: delete_path
-                - name: read_file_segment
-                - name: search_in_files
-                - name: save_file
-                - name: list_directory
-              timeout: null
-        thinking: null
-        memories: []
-        retry: null
-      description: ''
-      context_window: -1
     - id: Manual Phase Prompt for Assistant
       type: literal
       config:
@@ -254,35 +123,6 @@ graph:
         role: assistant
       description: ''
       context_window: 0
-    - id: Programmer Test Error Summary
-      type: agent
-      config:
-        name: gpt-4o
-        provider: openai
-        role: |-
-          ${COMMON_PROMPT}
-          You are Programmer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
-          You can write/create computer software or applications by providing a specific programming language to the computer. You have extensive computing and coding experience in many varieties of programming languages and platforms, such as Python, Java, C, C++, HTML, CSS, JavaScript, XML, SQL, PHP, etc,.
-          You will receive the task from user.
-          To complete the task, you must call the functions to save or edit the codes that appropriately solves the requested instruction based on your expertise and customer's needs.
-        base_url: ${BASE_URL}
-        api_key: ${API_KEY}
-        params: {}
-        tooling:
-          - type: function
-            config:
-              tools:
-                - name: uv_related:All
-                - name: describe_available_files
-                - name: read_file_segment
-                - name: search_in_files
-                - name: list_directory
-              timeout: null
-        thinking: null
-        memories: []
-        retry: null
-      description: ''
-      context_window: -1
     - id: Manual Phase Loop Counter
       type: loop_counter
       config:
@@ -291,34 +131,6 @@ graph:
         message: ''
       description: ''
       context_window: 0
-    - id: Code Reviewer
-      type: agent
-      config:
-        name: gpt-4o
-        provider: openai
-        role: |-
-          ${COMMON_PROMPT}
-          You are Code Reviewer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
-          You can help programmers to assess source codes for software troubleshooting, fix bugs to increase code quality and robustness, and offer proposals to improve the source codes.
-          You will receive the task from user.
-        base_url: ${BASE_URL}
-        api_key: ${API_KEY}
-        params: {}
-        tooling:
-          - type: function
-            config:
-              tools:
-                - name: uv_related:All
-                - name: describe_available_files
-                - name: read_file_segment
-                - name: search_in_files
-                - name: list_directory
-              timeout: null
-        thinking: null
-        memories: []
-        retry: null
-      description: ''
-      context_window: -1
     - id: Code Review Modification Phase Prompt for Assistant
       type: literal
       config:
@@ -389,10 +201,213 @@ graph:
         role: user
       description: ''
       context_window: 0
+    - id: Code Review Phase Loop Counter
+      type: loop_counter
+      config:
+        max_iterations: 10
+        reset_on_emit: true
+        message: ''
+      description: ''
+      context_window: 0
+    - id: Programmer Test Modification
+      type: agent
+      config:
+        name: qwen3:8b
+        provider: openai
+        role: |-
+          ${COMMON_PROMPT}
+          You are Programmer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
+          You can write/create computer software or applications by providing a specific programming language to the computer. You have extensive computing and coding experience in many varieties of programming languages and platforms, such as Python, Java, C, C++, HTML, CSS, JavaScript, XML, SQL, PHP, etc,.
+          You will receive the task from user.
+          To complete the task, you must call the functions to save or edit the codes that appropriately solves the requested instruction based on your expertise and customer's needs.
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: uv_related:All
+                - name: apply_text_edits
+                - name: create_folder
+                - name: describe_available_files
+                - name: delete_path
+                - name: read_file_segment
+                - name: search_in_files
+                - name: save_file
+                - name: list_directory
+              timeout: null
+        thinking: null
+        memories: []
+        retry: null
+      description: ''
+      context_window: -1
+      log_output: true
+    - id: Programmer Coding
+      type: agent
+      config:
+        name: deepseek-coder-v2:latest
+        provider: openai
+        role: |-
+          ${COMMON_PROMPT}
+          You are Programmer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
+          You can write/create computer software or applications by providing a specific programming language to the computer. You have extensive computing and coding experience in many varieties of programming languages and platforms, such as Python, Java, C, C++, HTML, CSS, JavaScript, XML, SQL, PHP, etc,.
+          You will receive the task from user.
+          To complete the task, you must call the functions to save or edit the codes that appropriately solves the requested instruction based on your expertise and customer's needs.
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: uv_related:All
+                - name: apply_text_edits
+                - name: create_folder
+                - name: describe_available_files
+                - name: delete_path
+                - name: read_file_segment
+                - name: search_in_files
+                - name: save_file
+                - name: list_directory
+              timeout: null
+        thinking: null
+        memories: []
+        retry: null
+      description: ''
+      context_window: 0
+      log_output: true
+    - id: Programmer Code Complete
+      type: agent
+      config:
+        name: deepseek-coder-v2:latest
+        provider: openai
+        role: |-
+          ${COMMON_PROMPT}
+          You are Programmer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
+          You can write/create computer software or applications by providing a specific programming language to the computer. You have extensive computing and coding experience in many varieties of programming languages and platforms, such as Python, Java, C, C++, HTML, CSS, JavaScript, XML, SQL, PHP, etc,.
+          You will receive the task from user.
+          To complete the task, you must call the functions to save or edit the codes that appropriately solves the requested instruction based on your expertise and customer's needs.
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: uv_related:All
+                - name: apply_text_edits
+                - name: create_folder
+                - name: describe_available_files
+                - name: delete_path
+                - name: read_file_segment
+                - name: search_in_files
+                - name: save_file
+                - name: list_directory
+              timeout: null
+        thinking: null
+        memories: []
+        retry: null
+      description: ''
+      context_window: 0
+      log_output: true
+    - id: Code Reviewer
+      type: agent
+      config:
+        name: deepseek-r1:latest
+        provider: openai
+        role: |-
+          ${COMMON_PROMPT}
+          You are Code Reviewer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
+          You can help programmers to assess source codes for software troubleshooting, fix bugs to increase code quality and robustness, and offer proposals to improve the source codes.
+          You will receive the task from user.
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: uv_related:All
+                - name: describe_available_files
+                - name: read_file_segment
+                - name: search_in_files
+                - name: list_directory
+              timeout: null
+        thinking: null
+        memories: []
+        retry: null
+      description: ''
+      context_window: -1
+      log_output: true
+    - id: Programmer Code Review
+      type: agent
+      config:
+        name: deepseek-r1:latest
+        provider: openai
+        role: |-
+          ${COMMON_PROMPT}
+          You are Programmer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
+          You can write/create computer software or applications by providing a specific programming language to the computer. You have extensive computing and coding experience in many varieties of programming languages and platforms, such as Python, Java, C, C++, HTML, CSS, JavaScript, XML, SQL, PHP, etc,.
+          You will receive the task from user.
+          To complete the task, you must call the functions to save or edit the codes that appropriately solves the requested instruction based on your expertise and customer's needs.
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: uv_related:All
+                - name: apply_text_edits
+                - name: create_folder
+                - name: describe_available_files
+                - name: delete_path
+                - name: read_file_segment
+                - name: search_in_files
+                - name: save_file
+                - name: list_directory
+              timeout: null
+        thinking: null
+        memories: []
+        retry: null
+      description: ''
+      context_window: -1
+      log_output: true
+    - id: Programmer Test Error Summary
+      type: agent
+      config:
+        name: qwen3:8b
+        provider: openai
+        role: |-
+          ${COMMON_PROMPT}
+          You are Programmer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
+          You can write/create computer software or applications by providing a specific programming language to the computer. You have extensive computing and coding experience in many varieties of programming languages and platforms, such as Python, Java, C, C++, HTML, CSS, JavaScript, XML, SQL, PHP, etc,.
+          You will receive the task from user.
+          To complete the task, you must call the functions to save or edit the codes that appropriately solves the requested instruction based on your expertise and customer's needs.
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: uv_related:All
+                - name: describe_available_files
+                - name: read_file_segment
+                - name: search_in_files
+                - name: list_directory
+              timeout: null
+        thinking: null
+        memories: []
+        retry: null
+      description: ''
+      context_window: -1
+      log_output: true
     - id: Software Test Engineer
       type: agent
       config:
-        name: gpt-4o
+        name: qwen3:8b
         provider: openai
         role: |-
           ${COMMON_PROMPT}
@@ -428,25 +443,18 @@ graph:
         retry: null
       description: ''
       context_window: -1
-    - id: Code Review Phase Loop Counter
-      type: loop_counter
-      config:
-        max_iterations: 10
-        reset_on_emit: true
-        message: ''
-      description: ''
-      context_window: 0
-    - id: Programmer Coding
+      log_output: true
+    - id: Chief Executive Officer
       type: agent
       config:
-        name: deepseek-coder-v2
+        name: deepseek-r1:latest
         provider: openai
         role: |-
           ${COMMON_PROMPT}
-          You are Programmer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
-          You can write/create computer software or applications by providing a specific programming language to the computer. You have extensive computing and coding experience in many varieties of programming languages and platforms, such as Python, Java, C, C++, HTML, CSS, JavaScript, XML, SQL, PHP, etc,.
+          You are Chief Executive Officer. Now, we are both working at ChatDev and we share a common interest in collaborating to successfully complete a task assigned by a new customer.
+          Your main responsibilities include being an active decision-maker on users' demands and other key policy issues, leader, manager, and executor. Your decision-making role involves high-level decisions about policy and strategy; and your communicator role can involve speaking to the organization's management and employees.
           You will receive the task from user.
-          To complete the task, you must call the functions to save or edit the codes that appropriately solves the requested instruction based on your expertise and customer's needs.
+          To complete the task, I will give you one or more instructions, and you must help me to write a specific solution that appropriately solves the requested instruction based on your expertise and my needs.
         base_url: ${BASE_URL}
         api_key: ${API_KEY}
         params: {}
@@ -470,17 +478,16 @@ graph:
       description: ''
       context_window: 0
       log_output: true
-    - id: Programmer Code Complete
+    - id: Chief Product Officer
       type: agent
       config:
-        name: deepseek-coder-v2
+        name: deepseek-r1:latest
         provider: openai
         role: |-
           ${COMMON_PROMPT}
-          You are Programmer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
-          You can write/create computer software or applications by providing a specific programming language to the computer. You have extensive computing and coding experience in many varieties of programming languages and platforms, such as Python, Java, C, C++, HTML, CSS, JavaScript, XML, SQL, PHP, etc,.
+          You are Chief Product Officer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
+          You are responsible for all product-related matters in ChatDev. Usually includes product design, product strategy, product vision, product innovation, project management and product marketing.
           You will receive the task from user.
-          To complete the task, you must call the functions to save or edit the codes that appropriately solves the requested instruction based on your expertise and customer's needs.
         base_url: ${BASE_URL}
         api_key: ${API_KEY}
         params: {}
@@ -502,7 +509,7 @@ graph:
         memories: []
         retry: null
       description: ''
-      context_window: 0
+      context_window: -1
       log_output: true
   edges:
     - from: Coding Phase Prompt for Assistant

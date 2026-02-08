@@ -1,0 +1,50 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    libsqlite3-dev \
+    libproj-dev \
+    libgeos-dev \
+    libgdal-dev \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libffi-dev \
+    shared-mime-info \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy dependency files
+COPY requirements.txt ./
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install additional dependencies from pyproject.toml
+COPY pyproject.toml ./
+RUN pip install --no-cache-dir \
+    pandas>=2.3.3 \
+    openpyxl>=3.1.2 \
+    numpy>=2.3.5 \
+    seaborn>=0.13.2 \
+    google-genai>=1.52.0 \
+    chardet>=5.2.0 \
+    pygame>=2.6.1 \
+    filelock>=3.20.1 \
+    markdown>=3.10 \
+    xhtml2pdf>=0.2.17
+
+# Copy application code
+COPY . .
+
+# Create logs directory
+RUN mkdir -p logs
+
+# Expose ports
+EXPOSE 8000 8001
+
+# Run the server
+CMD ["python", "server_main.py", "--host", "0.0.0.0", "--port", "8000"]

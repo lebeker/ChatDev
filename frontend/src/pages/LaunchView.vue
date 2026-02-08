@@ -1363,10 +1363,10 @@ const establishWebSocketConnection = () => {
     return
   }
 
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-  const wsProtocol = baseUrl.startsWith('https') ? 'wss:' : 'ws:'
-  const urlObj = new URL(baseUrl)
-  const wsUrl = `${wsProtocol}//${urlObj.host}/ws`
+  // Use relative WebSocket URL - Vite proxy will route /ws to backend
+  // Browser connects to ws://localhost:22001/ws, Vite proxies to chatdev-backend:8000/ws
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const wsUrl = `${wsProtocol}//${window.location.host}/ws`
   const socket = new WebSocket(wsUrl)
   ws = socket
 
