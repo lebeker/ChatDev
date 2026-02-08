@@ -209,17 +209,23 @@ graph:
         message: ''
       description: ''
       context_window: 0
-    - id: Programmer Test Modification
+    - id: Software Test Engineer
       type: agent
       config:
         name: qwen3:8b
         provider: openai
         role: |-
           ${COMMON_PROMPT}
-          You are Programmer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
-          You can write/create computer software or applications by providing a specific programming language to the computer. You have extensive computing and coding experience in many varieties of programming languages and platforms, such as Python, Java, C, C++, HTML, CSS, JavaScript, XML, SQL, PHP, etc,.
+          You are Software Test Engineer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
+          You can use the software as intended to analyze its functional properties, design manual and automated test procedures to evaluate each software product, build and implement software evaluation test programs, and run test programs to ensure that testing protocols evaluate the software correctly.
           You will receive the task from user.
-          To complete the task, you must call the functions to save or edit the codes that appropriately solves the requested instruction based on your expertise and customer's needs.
+
+          If you need to run the code, don't forget to set timeout.
+          [CRITICAL INSTRUCTION FOR TIMEOUTS]
+          Since the target program might be an endless loop application (e.g., a Snake game, a GUI app, or a server), the test runner MUST use a timeout to terminate it.
+          If the test report shows `"timed_out": True`, you must analyze the `stdout` and `stderr`:
+          1. **Pass**: If the logs indicate the application started successfully (e.g., "Game started", "Listening on port", or simply running without crashing) and was eventually killed by the timeout, **DO NOT classify this as a bug**. You should consider this a successful run.
+          2. **Fail**: Only classify a timeout as a bug if the program was supposed to finish quickly (like a calculation script) but hung, or if it produced no output/errors before timing out.
         base_url: ${BASE_URL}
         api_key: ${API_KEY}
         params: {}
@@ -246,7 +252,7 @@ graph:
     - id: Programmer Coding
       type: agent
       config:
-        name: deepseek-coder-v2:latest
+        name: qwen3:8b
         provider: openai
         role: |-
           ${COMMON_PROMPT}
@@ -280,7 +286,7 @@ graph:
     - id: Programmer Code Complete
       type: agent
       config:
-        name: deepseek-coder-v2:latest
+        name: qwen3:8b
         provider: openai
         role: |-
           ${COMMON_PROMPT}
@@ -314,7 +320,7 @@ graph:
     - id: Code Reviewer
       type: agent
       config:
-        name: deepseek-r1:latest
+        name: qwen3:8b
         provider: openai
         role: |-
           ${COMMON_PROMPT}
@@ -343,7 +349,7 @@ graph:
     - id: Programmer Code Review
       type: agent
       config:
-        name: deepseek-r1:latest
+        name: qwen3:8b
         provider: openai
         role: |-
           ${COMMON_PROMPT}
@@ -404,23 +410,17 @@ graph:
       description: ''
       context_window: -1
       log_output: true
-    - id: Software Test Engineer
+    - id: Programmer Test Modification
       type: agent
       config:
         name: qwen3:8b
         provider: openai
         role: |-
           ${COMMON_PROMPT}
-          You are Software Test Engineer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
-          You can use the software as intended to analyze its functional properties, design manual and automated test procedures to evaluate each software product, build and implement software evaluation test programs, and run test programs to ensure that testing protocols evaluate the software correctly.
+          You are Programmer. we are both working at ChatDev. We share a common interest in collaborating to successfully complete a task assigned by a new customer.
+          You can write/create computer software or applications by providing a specific programming language to the computer. You have extensive computing and coding experience in many varieties of programming languages and platforms, such as Python, Java, C, C++, HTML, CSS, JavaScript, XML, SQL, PHP, etc,.
           You will receive the task from user.
-
-          If you need to run the code, don't forget to set timeout.
-          [CRITICAL INSTRUCTION FOR TIMEOUTS]
-          Since the target program might be an endless loop application (e.g., a Snake game, a GUI app, or a server), the test runner MUST use a timeout to terminate it.
-          If the test report shows `"timed_out": True`, you must analyze the `stdout` and `stderr`:
-          1. **Pass**: If the logs indicate the application started successfully (e.g., "Game started", "Listening on port", or simply running without crashing) and was eventually killed by the timeout, **DO NOT classify this as a bug**. You should consider this a successful run.
-          2. **Fail**: Only classify a timeout as a bug if the program was supposed to finish quickly (like a calculation script) but hung, or if it produced no output/errors before timing out.
+          To complete the task, you must call the functions to save or edit the codes that appropriately solves the requested instruction based on your expertise and customer's needs.
         base_url: ${BASE_URL}
         api_key: ${API_KEY}
         params: {}
@@ -447,7 +447,7 @@ graph:
     - id: Chief Executive Officer
       type: agent
       config:
-        name: deepseek-r1:latest
+        name: qwen3:8b
         provider: openai
         role: |-
           ${COMMON_PROMPT}
@@ -481,7 +481,7 @@ graph:
     - id: Chief Product Officer
       type: agent
       config:
-        name: deepseek-r1:latest
+        name: qwen3:8b
         provider: openai
         role: |-
           ${COMMON_PROMPT}

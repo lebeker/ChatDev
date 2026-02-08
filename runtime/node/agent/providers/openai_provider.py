@@ -95,6 +95,9 @@ class OpenAIProvider(ModelProvider):
             return True
         if protocol == "responses":
             return False
+        # Force chat mode for Ollama (base_url contains ollama or port 11434)
+        if self.base_url and ("ollama" in self.base_url.lower() or ":11434" in self.base_url):
+            return True
         # Default to Responses API only if it exists on the client
         return not hasattr(client, "responses")
 

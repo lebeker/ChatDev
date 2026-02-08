@@ -20,6 +20,9 @@ RUN apt-get update && apt-get install -y \
 # Copy dependency files
 COPY requirements.txt ./
 
+# Install uv (Python package manager)
+RUN pip install --no-cache-dir uv
+
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
