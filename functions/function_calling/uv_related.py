@@ -157,7 +157,9 @@ def _run_uv_command(
     timeout: float | None = None,
 ) -> Dict[str, Any]:
     timeout_value = _DEFAULT_TIMEOUT if timeout is None else timeout
-    env_vars = None if env is None else {**os.environ, **env}
+    base_env = {**os.environ}
+    base_env.setdefault("UV_LINK_MODE", "copy")
+    env_vars = {**base_env, **(env or {})}
     try:
         completed = subprocess.run(
             cmd,
