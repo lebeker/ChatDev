@@ -222,6 +222,37 @@ def install_python_packages(
     return result
 
 
+_REQUIRES_PYTHON_RE = re.compile(r"(\d+)\.(\d+)")
+
+def _python_version_from_project(workspace_root: Path) -> str | None:
+    """Read requires-python from pyproject.toml and return a major.minor spec (e.g. '3.12') for uv venv, or None."""
+    pyproject = workspace_root / "pyproject.toml"
+    if not pyproject.is_file():
+        return None
+    try:
+        text = pyproject.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    in_project = False
+    for line in text.splitlines():
+        line = line.strip()
+        if line == "[project]":
+            in_project = True
+            continue
+        if in_project and line.startswith("["):
+            break
+        if in_project and "requires-python" in line:
+            # Match quoted value: requires-python = ">=3.12" or "==3.12.*" etc.
+            match = re.search(r'requires-python\s*=\s*["\']([^"\']+)["\']', line)
+            if match:
+                spec = match.group(1)
+                m = _REQUIRES_PYTHON_RE.search(spec)
+                if m:
+                    return f"{m.group(1)}.{m.group(2)}"
+            break
+    return None
+
+
 def init_python_env(
     *,
     # recreate: bool = False,
@@ -230,7 +261,7 @@ def init_python_env(
     # venv_args: Sequence[str] | None = None,
     _context: Dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
-    """Run uv lock and uv venv inside the workspace."""
+    """Run uv lock and uv venv inside the workspace. When python_version is not given, uses requires-python from pyproject.toml if present."""
 
     ctx = WorkspaceCommandContext(_context)
     steps: List[Dict[str, Any]] = []
@@ -245,15 +276,18 @@ def init_python_env(
             "steps": steps,
         }
 
+    effective_version = python_version
+    if effective_version is None or (isinstance(effective_version, str) and not effective_version.strip()):
+        effective_version = _python_version_from_project(ctx.workspace_root)
+
     venv_cmd: List[str] = ["uv", "venv"]
     # if recreate:
     #     venv_cmd.append("--recreate")
     # venv_cmd.extend(_validate_flag_args(venv_args))
-    if python_version is not None:
-        python_spec = python_version.strip()
-        if not python_spec:
-            raise ValueError("python argument cannot be empty")
-        venv_cmd.extend(["--python", python_spec])
+    if effective_version is not None:
+        python_spec = effective_version.strip() if isinstance(effective_version, str) else str(effective_version)
+        if python_spec:
+            venv_cmd.extend(["--python", python_spec])
 
     venv_result = _run_uv_command(venv_cmd, ctx.workspace_root, step="uv venv")
     steps.append(venv_result)
