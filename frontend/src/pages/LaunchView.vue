@@ -379,6 +379,84 @@
           </ul>
         </Transition>
       </div>
+          
+          <!-- Session Selection -->
+          <label class="section-label" style="margin-top: 20px;">Session Selection</label>
+          <div
+            class="select-wrapper custom-file-selector"
+            ref="sessionSelectorWrapperRef"
+          >
+            <input
+              ref="sessionSelectorInputRef"
+              v-model="sessionSearchQuery"
+              type="text"
+              class="file-selector-input"
+              :placeholder="loading ? 'Loading...' : 'Start New Session'"
+              :disabled="loading || isWorkflowRunning"
+              @focus="handleSessionInputFocus"
+              @input="handleSessionInputChange"
+              @keydown.enter.prevent="handleSessionInputEnter"
+              @blur="handleSessionInputBlur"
+            />
+            <div class="select-arrow">▼</div>
+            <Transition name="file-dropdown">
+              <ul
+                v-if="isSessionDropdownOpen"
+                class="file-dropdown"
+              >
+                <li
+                  class="file-option"
+                  :class="{ 'file-option-selected': !selectedSessionId }"
+                  @mousedown.prevent="selectSession(null)"
+                >
+                  <span class="file-name">Start New Session</span>
+                </li>
+                <li
+                  v-for="session in filteredSessions"
+                  :key="session.session_id"
+                  class="file-option"
+                  :class="{ 'file-option-selected': selectedSessionId === session.session_id }"
+                  @mousedown.prevent="selectSession(session.session_id)"
+                >
+                  <span class="file-name">{{ formatSessionOption(session) }}</span>
+                </li>
+                <li
+                  v-if="!filteredSessions.length && availableSessions.length > 0"
+                  class="file-empty"
+                >
+                  No matching sessions
+                </li>
+                <li
+                  v-if="availableSessions.length === 0"
+                  class="file-empty"
+                >
+                  No sessions found
+                </li>
+              </ul>
+            </Transition>
+          </div>
+          
+          <!-- Continue Session Button (for terminated sessions) -->
+          <button
+            v-if="selectedSessionId && restoredSessionData?.can_resume"
+            type="button"
+            class="continue-session-button"
+            :disabled="loading || isWorkflowRunning || !isConnectionReady"
+            @click="handleContinueSession"
+          >
+            Continue Session
+          </button>
+          
+          <!-- Delete Session Button -->
+          <button
+            v-if="selectedSessionId"
+            type="button"
+            class="delete-session-button"
+            :disabled="loading || isWorkflowRunning"
+            @click="handleDeleteSession"
+          >
+            Delete Session
+          </button>
 
           <label class="section-label">Status</label>
           <div class="status-display" :class="{ 'status-active': status === 'Running...' }">
@@ -490,6 +568,7 @@ import WorkflowNode from '../components/WorkflowNode.vue'
 import WorkflowEdge from '../components/WorkflowEdge.vue'
 import StartNode from '../components/StartNode.vue'
 import CollapsibleMessage from '../components/CollapsibleMessage.vue'
+import { fetchSessions, fetchSession, deleteSession } from '../utils/apiFunctions'
 
 const router = useRouter()
 const route = useRoute()
@@ -505,6 +584,16 @@ const isFileSearchDirty = ref(false)
 const isFileDropdownOpen = ref(false)
 const fileSelectorWrapperRef = ref(null)
 const fileSelectorInputRef = ref(null)
+
+// Session state
+const availableSessions = ref([])
+const selectedSessionId = ref('')
+const restoredSessionData = ref(null)
+const sessionSearchQuery = ref('')
+const isSessionSearchDirty = ref(false)
+const isSessionDropdownOpen = ref(false)
+const sessionSelectorWrapperRef = ref(null)
+const sessionSelectorInputRef = ref(null)
 
 // Status state
 const status = ref('Waiting for workflow selection...')
@@ -839,6 +928,15 @@ const handleClickOutside = (event) => {
   ) {
     closeFileDropdown()
     resetFileSearchQuery()
+  }
+  
+  if (
+    isSessionDropdownOpen.value &&
+    sessionSelectorWrapperRef.value &&
+    !sessionSelectorWrapperRef.value.contains(event.target)
+  ) {
+    closeSessionDropdown()
+    resetSessionSearchQuery()
   }
 }
 
@@ -1366,7 +1464,11 @@ const establishWebSocketConnection = () => {
   // Use relative WebSocket URL - Vite proxy will route /ws to backend
   // Browser connects to ws://localhost:22001/ws, Vite proxies to chatdev-backend:8000/ws
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const wsUrl = `${wsProtocol}//${window.location.host}/ws`
+  // Include session_id as query parameter if restoring a session
+  let wsUrl = `${wsProtocol}//${window.location.host}/ws`
+  if (selectedSessionId.value && restoredSessionData.value) {
+    wsUrl += `?session_id=${encodeURIComponent(selectedSessionId.value)}`
+  }
   const socket = new WebSocket(wsUrl)
   ws = socket
 
@@ -1393,9 +1495,20 @@ const establishWebSocketConnection = () => {
         return
       }
 
+      // If restoring a session, update selectedSessionId to match
+      if (restoredSessionData.value && restoredSessionData.value.session_id === sessionId) {
+        selectedSessionId.value = sessionId
+      }
+
       isConnectionReady.value = true
       shouldGlow.value = true
-      status.value = 'Waiting for launch...'
+      
+      // If restoring a completed session, allow continuing
+      if (restoredSessionData.value && restoredSessionData.value.status === 'completed') {
+        status.value = 'Session restored - Ready to continue'
+      } else {
+        status.value = 'Waiting for launch...'
+      }
 
       nextTick(() => {
         taskInputRef.value?.focus()
@@ -1435,6 +1548,9 @@ watch(selectedFile, (newFile) => {
   fileSearchQuery.value = newFile || ''
   isFileSearchDirty.value = false
 
+  // Reload sessions when workflow template changes
+  loadSessions()
+
   if (!newFile) {
     resetConnectionState()
     status.value = 'Waiting for file selection...'
@@ -1464,10 +1580,305 @@ watch(
   }
 )
 
+// Computed property for filtered sessions
+const filteredSessions = computed(() => {
+  if (!sessionSearchQuery.value || !isSessionSearchDirty.value) {
+    return availableSessions.value
+  }
+  const query = sessionSearchQuery.value.toLowerCase()
+  return availableSessions.value.filter(session => {
+    const workflow = (session.yaml_file || '').toLowerCase()
+    const status = (session.status || '').toLowerCase()
+    const sessionId = (session.session_id || '').toLowerCase()
+    return workflow.includes(query) || status.includes(query) || sessionId.includes(query)
+  })
+})
+
+// Session management functions
+const loadSessions = async () => {
+  try {
+    // Filter sessions by selected workflow template
+    const yamlFile = selectedFile.value || null
+    const response = await fetchSessions(yamlFile)
+    console.log('Loaded sessions response:', response)
+    // Handle both array response and object with sessions property
+    const sessions = Array.isArray(response) ? response : (response.sessions || [])
+    console.log('Parsed sessions:', sessions)
+    availableSessions.value = sessions
+    // Update search query to show selected session
+    if (selectedSessionId.value) {
+      const selected = sessions.find(s => s.session_id === selectedSessionId.value)
+      if (selected) {
+        sessionSearchQuery.value = formatSessionOption(selected)
+      } else {
+        // Selected session not in filtered list, clear selection
+        selectedSessionId.value = ''
+        sessionSearchQuery.value = ''
+      }
+    } else {
+      sessionSearchQuery.value = ''
+    }
+  } catch (error) {
+    console.error('Failed to load sessions:', error)
+    availableSessions.value = []
+  }
+}
+
+const formatSessionOption = (session) => {
+  if (!session) return ''
+  const date = session.updated_at ? new Date(session.updated_at * 1000) : new Date()
+  const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const workflow = session.yaml_file || 'Unknown workflow'
+  const status = session.status || 'unknown'
+  const statusDisplay = status === 'terminated' ? '⚠ Terminated' : status === 'completed' ? '✓ Completed' : status
+  const sessionId = session.session_id ? session.session_id.substring(0, 8) : ''
+  return `${workflow} - ${statusDisplay} (${dateStr}) [${sessionId}]`
+}
+
+const openSessionDropdown = () => {
+  if (loading.value || isWorkflowRunning.value) {
+    return
+  }
+  isSessionDropdownOpen.value = true
+}
+
+const closeSessionDropdown = () => {
+  isSessionDropdownOpen.value = false
+}
+
+const handleSessionInputFocus = () => {
+  isSessionSearchDirty.value = false
+  openSessionDropdown()
+  if (sessionSearchQuery.value?.trim()) {
+    nextTick(() => sessionSelectorInputRef.value?.select())
+  }
+}
+
+const handleSessionInputChange = () => {
+  if (loading.value || isWorkflowRunning.value) {
+    return
+  }
+  isSessionSearchDirty.value = true
+  openSessionDropdown()
+}
+
+const handleSessionInputBlur = () => {
+  setTimeout(() => {
+    if (!isSessionDropdownOpen.value) {
+      resetSessionSearchQuery()
+    }
+  }, 120)
+}
+
+const handleSessionInputEnter = () => {
+  if (!isSessionSearchDirty.value && !selectedSessionId.value) {
+    // If no search query and no selection, select "Start New Session"
+    selectSession(null)
+    return
+  }
+  const [firstMatch] = filteredSessions.value
+  if (firstMatch) {
+    selectSession(firstMatch.session_id)
+  } else if (!isSessionSearchDirty.value) {
+    selectSession(null)
+  }
+}
+
+const resetSessionSearchQuery = () => {
+  if (selectedSessionId.value) {
+    const selected = availableSessions.value.find(s => s.session_id === selectedSessionId.value)
+    if (selected) {
+      sessionSearchQuery.value = formatSessionOption(selected)
+    } else {
+      sessionSearchQuery.value = ''
+    }
+  } else {
+    sessionSearchQuery.value = ''
+  }
+  isSessionSearchDirty.value = false
+}
+
+const selectSession = async (sessionId) => {
+  selectedSessionId.value = sessionId || ''
+  
+  if (sessionId) {
+    const selected = availableSessions.value.find(s => s.session_id === sessionId)
+    if (selected) {
+      sessionSearchQuery.value = formatSessionOption(selected)
+    }
+  } else {
+    sessionSearchQuery.value = ''
+  }
+  
+  isSessionSearchDirty.value = false
+  closeSessionDropdown()
+  sessionSelectorInputRef.value?.blur()
+
+  // Handle session change
+  await handleSessionChange()
+}
+
+const handleSessionChange = async () => {
+  if (!selectedSessionId.value) {
+    // Start new session
+    restoredSessionData.value = null
+    resetConnectionState()
+    chatMessages.value = []
+    taskPrompt.value = ''
+    if (selectedFile.value) {
+      status.value = 'Connecting...'
+      handleYAMLSelection(selectedFile.value)
+      establishWebSocketConnection()
+    } else {
+      status.value = 'Waiting for workflow selection...'
+    }
+    return
+  }
+
+  // Restore existing session
+  try {
+    status.value = 'Loading session...'
+    const sessionData = await fetchSession(selectedSessionId.value)
+    restoredSessionData.value = sessionData
+
+    // Set workflow file if available
+    if (sessionData.yaml_file && !selectedFile.value) {
+      selectedFile.value = sessionData.yaml_file
+      fileSearchQuery.value = sessionData.yaml_file
+      await handleYAMLSelection(sessionData.yaml_file)
+    }
+
+    // Restore chat history
+    chatMessages.value = []
+    if (sessionData.chat_history && sessionData.chat_history.length > 0) {
+      sessionData.chat_history.forEach(msg => {
+        if (msg.type === 'dialogue') {
+          addDialogue(msg.name, msg.text)
+        }
+      })
+    }
+
+    // Restore task prompt
+    if (sessionData.task_prompt) {
+      taskPrompt.value = sessionData.task_prompt
+    }
+
+    // Connect WebSocket with existing session ID
+    resetConnectionState()
+    status.value = 'Connecting...'
+    establishWebSocketConnection()
+
+    // After connection, we'll use the restored session_id
+    // The WebSocket will reconnect to the existing session
+  } catch (error) {
+    console.error('Failed to restore session:', error)
+    alert('Failed to restore session: ' + error.message)
+    selectedSessionId.value = ''
+    restoredSessionData.value = null
+    sessionSearchQuery.value = ''
+  }
+}
+
+const handleContinueSession = async () => {
+  if (!selectedSessionId.value || !restoredSessionData.value) {
+    return
+  }
+
+  if (!selectedFile.value) {
+    alert('Please select a workflow file first.')
+    return
+  }
+
+  if (!isConnectionReady.value || !sessionId) {
+    alert('WebSocket connection is not ready yet.')
+    return
+  }
+
+  // Get the last task prompt or use the original one
+  const continuePrompt = taskPrompt.value.trim() || restoredSessionData.value.task_prompt || ''
+  
+  if (!continuePrompt) {
+    alert('Please enter a task prompt to continue.')
+    return
+  }
+
+  // Launch workflow with the same session ID to continue
+  shouldGlow.value = false
+  status.value = 'Continuing session...'
+
+  try {
+    const response = await fetch('/api/workflow/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        yaml_file: selectedFile.value,
+        task_prompt: continuePrompt,
+        session_id: sessionId, // Use existing session ID
+        attachments: []
+      })
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      console.log('Session continued: ', result)
+
+      // Add continuation message
+      addDialogue('User', `[Continuing] ${continuePrompt}`)
+
+      taskPrompt.value = ''
+      status.value = 'Running...'
+      isWorkflowRunning.value = true
+    } else {
+      const error = await response.json().catch(() => ({}))
+      alert(`Failed to continue session: ${error.detail || response.statusText}`)
+      status.value = 'Ready'
+    }
+  } catch (error) {
+    console.error('Failed to continue session:', error)
+    alert('Failed to continue session: ' + error.message)
+    status.value = 'Ready'
+  }
+}
+
+const handleDeleteSession = async () => {
+  if (!selectedSessionId.value) {
+    return
+  }
+
+  if (!confirm(`Are you sure you want to delete session ${selectedSessionId.value}?`)) {
+    return
+  }
+
+  try {
+    await deleteSession(selectedSessionId.value)
+    // Remove from list
+    availableSessions.value = availableSessions.value.filter(s => s.session_id !== selectedSessionId.value)
+    
+    // Reset to new session
+    selectedSessionId.value = ''
+    restoredSessionData.value = null
+    resetConnectionState()
+    chatMessages.value = []
+    taskPrompt.value = ''
+    
+    if (selectedFile.value) {
+      status.value = 'Connecting...'
+      handleYAMLSelection(selectedFile.value)
+      establishWebSocketConnection()
+    } else {
+      status.value = 'Waiting for workflow selection...'
+    }
+  } catch (error) {
+    console.error('Failed to delete session:', error)
+    alert('Failed to delete session: ' + error.message)
+  }
+}
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   document.addEventListener('keydown', handleKeydown)
   loadWorkflows()
+  loadSessions()
 
   // Start the global timer
   if (!loadingTimerInterval) {
@@ -2865,6 +3276,56 @@ watch(
   cursor: not-allowed;
 }
 
+.continue-session-button {
+  width: 100%;
+  padding: 10px 16px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(153, 234, 249, 0.4);
+  background: rgba(153, 234, 249, 0.15);
+  color: rgba(153, 234, 249, 0.95);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.continue-session-button:hover:not(:disabled) {
+  background: rgba(153, 234, 249, 0.25);
+  border-color: rgba(153, 234, 249, 0.6);
+  color: #99eaf9;
+}
+
+.continue-session-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.delete-session-button {
+  width: 100%;
+  padding: 10px 16px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 100, 100, 0.3);
+  background: rgba(255, 100, 100, 0.1);
+  color: rgba(255, 200, 200, 0.9);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.delete-session-button:hover:not(:disabled) {
+  background: rgba(255, 100, 100, 0.2);
+  border-color: rgba(255, 100, 100, 0.5);
+  color: #ffcccc;
+}
+
+.delete-session-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .hidden-file-input {
   display: none;
 }
@@ -2963,7 +3424,8 @@ watch(
 }
 
 .file-selector,
-.file-selector-input {
+.file-selector-input,
+select.file-selector-input {
   width: 100%;
   box-sizing: border-box;
   padding: 10px 12px;
@@ -2974,7 +3436,14 @@ watch(
   color: #f2f2f2;
   font-size: 14px;
   appearance: none;
-  color: #f2f2f2;
+  cursor: pointer;
+}
+
+select.file-selector-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f2f2f2' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 35px;
 }
 
 .file-selector-input {
@@ -3035,6 +3504,14 @@ watch(
 
 .file-option:hover {
   background: rgba(255, 255, 255, 0.06);
+}
+
+.file-option-selected {
+  background: rgba(153, 234, 249, 0.15);
+}
+
+.file-option-selected:hover {
+  background: rgba(153, 234, 249, 0.2);
 }
 
 .file-name {

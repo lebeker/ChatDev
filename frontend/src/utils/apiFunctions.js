@@ -401,6 +401,63 @@ export async function fetchLogsZip(sessionId) {
   }
 }
 
+// List all sessions
+export async function fetchSessions(yamlFile = null) {
+  try {
+    let url = '/api/sessions'
+    if (yamlFile) {
+      url += `?yaml_file=${encodeURIComponent(yamlFile)}`
+    }
+    const response = await fetch(apiUrl(url))
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sessions: ${response.status} ${response.statusText}`)
+    }
+    const data = await response.json()
+    return data.sessions || []
+  } catch (error) {
+    console.error('Failed to fetch sessions:', error)
+    throw error
+  }
+}
+
+// Get session details including chat history
+export async function fetchSession(sessionId) {
+  try {
+    if (!sessionId) {
+      throw new Error('Missing session id')
+    }
+    const response = await fetch(apiUrl(`/api/sessions/${encodeURIComponent(sessionId)}`))
+    if (!response.ok) {
+      throw new Error(`Failed to fetch session: ${response.status} ${response.statusText}`)
+    }
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error('Failed to fetch session:', error)
+    throw error
+  }
+}
+
+// Delete a session
+export async function deleteSession(sessionId) {
+  try {
+    if (!sessionId) {
+      throw new Error('Missing session id')
+    }
+    const response = await fetch(apiUrl(`/api/sessions/${encodeURIComponent(sessionId)}`), {
+      method: 'DELETE'
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to delete session: ${response.status} ${response.statusText}`)
+    }
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error('Failed to delete session:', error)
+    throw error
+  }
+}
+
 // Fetch session attachments
 export async function getAttachment(sessionId, attachmentId) {
   try {

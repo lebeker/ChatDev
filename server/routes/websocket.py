@@ -10,10 +10,13 @@ router = APIRouter()
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     manager = get_websocket_manager()
-    session_id = await manager.connect(websocket)
+    # Get session_id from query parameters if provided
+    session_id = websocket.query_params.get("session_id")
+    # Use provided session_id or create new one
+    connected_session_id = await manager.connect(websocket, session_id=session_id)
     try:
         while True:
             message = await websocket.receive_text()
-            await manager.handle_message(session_id, message)
+            await manager.handle_message(connected_session_id, message)
     except WebSocketDisconnect:
-        manager.disconnect(session_id)
+        manager.disconnect(connected_session_id)
