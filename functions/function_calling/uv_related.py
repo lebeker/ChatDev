@@ -277,14 +277,20 @@ def uv_run(
     timeout_seconds: float | None = None,
     _context: Dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
-    """Execute uv run for a module or script inside the workspace root."""
+    """Execute uv run for a module or script inside the workspace root.
+    Provide exactly one of module or script; they are mutually exclusive.
+    Use script for file paths (e.g. main.py), module for runnable module names (e.g. pytest).
+    """
 
     ctx = WorkspaceCommandContext(_context)
     timeout_seconds = _coerce_timeout_seconds(timeout_seconds)
 
-    has_module = module is not None
-    has_script = script is not None
-    if has_module == has_script:
+    has_module = module is not None and (isinstance(module, str) and module.strip())
+    has_script = script is not None and (isinstance(script, str) and script.strip())
+    if has_module and has_script:
+        # Normalize: prefer script when agent sends both (common mistake).
+        has_module = False
+    elif not has_module and not has_script:
         raise ValueError("Provide exactly one of module or script")
 
     cmd: List[str] = ["uv", "run"]
