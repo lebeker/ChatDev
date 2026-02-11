@@ -126,7 +126,7 @@ graph:
     - id: Manual Phase Loop Counter
       type: loop_counter
       config:
-        max_iterations: 1
+        max_iterations: 5
         reset_on_emit: true
         message: ''
       description: ''
