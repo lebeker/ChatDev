@@ -241,6 +241,7 @@ graph:
                 - name: read_file_segment
                 - name: search_in_files
                 - name: save_file
+                - name: save_files
                 - name: list_directory
               timeout: null
         thinking: null
@@ -275,6 +276,7 @@ graph:
                 - name: read_file_segment
                 - name: search_in_files
                 - name: save_file
+                - name: save_files
                 - name: list_directory
               timeout: null
         thinking: null
@@ -309,6 +311,7 @@ graph:
                 - name: read_file_segment
                 - name: search_in_files
                 - name: save_file
+                - name: save_files
                 - name: list_directory
               timeout: null
         thinking: null
@@ -372,6 +375,7 @@ graph:
                 - name: read_file_segment
                 - name: search_in_files
                 - name: save_file
+                - name: save_files
                 - name: list_directory
               timeout: null
         thinking: null
@@ -436,6 +440,7 @@ graph:
                 - name: read_file_segment
                 - name: search_in_files
                 - name: save_file
+                - name: save_files
                 - name: list_directory
               timeout: null
         thinking: null
@@ -470,6 +475,7 @@ graph:
                 - name: read_file_segment
                 - name: search_in_files
                 - name: save_file
+                - name: save_files
                 - name: list_directory
               timeout: null
         thinking: null
@@ -503,6 +509,7 @@ graph:
                 - name: read_file_segment
                 - name: search_in_files
                 - name: save_file
+                - name: save_files
                 - name: list_directory
               timeout: null
         thinking: null

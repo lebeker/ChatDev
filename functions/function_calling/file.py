@@ -420,6 +420,70 @@ def save_file(
     }
 
 
+def save_files(
+    files: Annotated[
+        Sequence[Mapping[str, Any]],
+        ParamMeta(
+            description="List of objects with 'path' (workspace-relative) and 'content' (text). Writes multiple files in one call for multi-file projects."
+        ),
+    ],
+    *,
+    encoding: str = "utf-8",
+    mode: Literal["overwrite", "append"] = "overwrite",
+    _context: Dict[str, Any] | None = None,
+) -> Dict[str, Any]:
+    """
+    Write multiple workspace files in one call. Use for multi-file projects instead of
+    calling save_file repeatedly. Each entry in files must have 'path' and 'content'.
+    Same newline normalization as save_file is applied to each content.
+    """
+    if not files:
+        return {"written": [], "errors": [], "count": 0}
+
+    if mode not in {"overwrite", "append"}:
+        raise ValueError("mode must be either 'overwrite' or 'append'")
+
+    ctx = FileToolContext(_context)
+    written: List[Dict[str, Any]] = []
+    errors: List[Dict[str, Any]] = []
+
+    for i, item in enumerate(files):
+        if not isinstance(item, (dict, Mapping)):
+            errors.append({"index": i, "error": "each entry must be an object with 'path' and 'content'"})
+            continue
+        path_val = item.get("path")
+        content_val = item.get("content")
+        if path_val is None or content_val is None:
+            errors.append({"index": i, "error": "missing 'path' or 'content'"})
+            continue
+        path_str = str(path_val).strip()
+        content_str = str(content_val) if content_val is not None else ""
+        if not path_str:
+            errors.append({"index": i, "error": "path cannot be empty"})
+            continue
+        try:
+            content_str = _normalize_content_newlines(content_str)
+            target = ctx.resolve_under_workspace(path_str)
+            if target.exists() and target.is_dir():
+                errors.append({"index": i, "path": path_str, "error": "target is a directory"})
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            data = content_str.encode(encoding)
+            write_mode = "wb" if mode == "overwrite" else "ab"
+            with target.open(write_mode) as handle:
+                handle.write(data)
+            size = target.stat().st_size if target.exists() else None
+            written.append({
+                "path": ctx.to_workspace_relative(target),
+                "absolute_path": str(target),
+                "size": size,
+            })
+        except (ValueError, OSError) as exc:
+            errors.append({"index": i, "path": path_str, "error": str(exc)})
+
+    return {"written": written, "errors": errors, "count": len(written)}
+
+
 def read_text_file_snippet(
     path: str,
     *,
