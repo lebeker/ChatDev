@@ -65,12 +65,13 @@ class LogEntry:
 class WorkflowLogger:
     """Workflow logger that tracks the entire execution lifecycle."""
 
-    def __init__(self, workflow_id: str = None, log_level: LogLevel = LogLevel.DEBUG, use_structured_logging: bool = True, log_to_console: bool = True):
+    def __init__(self, workflow_id: str = None, log_level: LogLevel = LogLevel.DEBUG, use_structured_logging: bool = True, log_to_console: bool = True, incremental_log_path: Optional[str] = None):
         self.workflow_id = workflow_id or f"workflow_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         self.logs: List[LogEntry] = []
         self.start_time = datetime.now()
         self.current_path: List[str] = []
         self.log_level: LogLevel = log_level
+        self._incremental_log_path: Optional[str] = incremental_log_path
 
         self.log_to_console: bool = log_to_console
         self.use_structured_logging = use_structured_logging
@@ -101,6 +102,10 @@ class WorkflowLogger:
             duration=duration
         )
         self.logs.append(log_entry)
+
+        # Persist incrementally so a crash still leaves a usable log file
+        if self._incremental_log_path:
+            self._flush_incremental()
 
         # Log to console if enabled
         if self.log_to_console:
@@ -386,13 +391,27 @@ class WorkflowLogger:
         """Serialize all logs to a JSON string."""
         return json.dumps(self.to_dict(), ensure_ascii=False, indent=2)
 
+    def _flush_incremental(self) -> None:
+        """Write current log state to incremental path and sync so crash leaves usable log."""
+        if not self._incremental_log_path:
+            return
+        path = Path(self._incremental_log_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        data = self.to_json()
+        with path.open("w", encoding="utf-8") as f:
+            f.write(data)
+            f.flush()
+            os.fsync(f.fileno())
+
     def save_to_file(self, filepath: str) -> None:
         """Persist logs to a file on disk."""
-        # with open(filepath, 'w', encoding='utf-8') as f:
-        #     f.write(self.to_json())
         path = Path(filepath)
-        path.parent.mkdir(parents=True, exist_ok=True)  # Create any missing parent directories
-        path.write_text(self.to_json(), encoding='utf-8')
+        path.parent.mkdir(parents=True, exist_ok=True)
+        data = self.to_json()
+        with path.open("w", encoding="utf-8") as f:
+            f.write(data)
+            f.flush()
+            os.fsync(f.fileno())
     
     # ================================================================
     # Timer Context Managers (integrated from LogManager)

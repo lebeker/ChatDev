@@ -24,7 +24,8 @@ class RuntimeBuilder:
         tool_manager = ToolManager()
         function_manager = get_function_manager(EDGE_FUNCTION_DIR)
         processor_function_manager = get_function_manager(EDGE_PROCESSOR_FUNCTION_DIR)
-        logger = logger or WorkflowLogger(self.graph.name, self.graph.log_level)
+        incremental_log_path = str(self.graph.directory / "execution_logs.json") if getattr(self.graph, "directory", None) else None
+        logger = logger or WorkflowLogger(self.graph.name, self.graph.log_level, incremental_log_path=incremental_log_path)
         log_manager = LogManager(logger)
         token_tracker = TokenTracker(workflow_id=self.graph.name)
 
