@@ -355,6 +355,13 @@ def load_file(
     return [record.as_message_block()]
 
 
+def _normalize_content_newlines(content: str) -> str:
+    """Replace literal backslash-n and backslash-t with real newline/tab for agent payloads that send escaped sequences."""
+    if "\\n" in content or "\\t" in content:
+        content = content.replace("\\n", "\n").replace("\\t", "\t")
+    return content
+
+
 def save_file(
     path: str,
     content: str,
@@ -365,10 +372,12 @@ def save_file(
 ) -> Dict[str, Any]:
     """
     Persist data to a workspace file while optionally registering it as an attachment.
+    Prefer sending multi-line content with real newline characters. Literal \\n and \\t
+    in the payload are normalized to newline and tab for compatibility.
 
     Args:
         path: Relative path where the file will be written.
-        content: Plain-text payload encoded with `encoding`.
+        content: Plain-text payload; use real newlines for multi-line content. Literal \\n and \\t are normalized.
         encoding: Text encoding used when `content` is provided.
         mode: Whether to replace the file (`overwrite`) or append to it (`append`).
 
@@ -383,6 +392,8 @@ def save_file(
 
     if mode not in {"overwrite", "append"}:
         raise ValueError("mode must be either 'overwrite' or 'append'")
+
+    content = _normalize_content_newlines(content)
 
     ctx = FileToolContext(_context)
     target = ctx.resolve_under_workspace(path)
